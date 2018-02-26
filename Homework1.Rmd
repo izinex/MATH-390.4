@@ -45,6 +45,8 @@ If there are any errors, the `expect_equal` function will tell you about them. I
 
 ```{r}
 v = seq(1, 10)
+my_reverse =   v[length(v):1]
+my_reverse
 my_reverse =  function(v){
   v[length(v):1]
 }
@@ -111,10 +113,12 @@ expect_gt(num_missing_in_R, qbinom(0.005, n^2, 0.3))
 
 ```{r}
 
-for (i in 1 : nrow(R)){
-  sort(sum(R[i,], na.rm = F), decreasing = T)
-print(R)
-}
+R <- R[order(-rowSums(R, na.rm=TRUE)), ]
+
+# for (i in 1 : nrow(R)){
+#   sort(sum(R[i,], na.rm = F), decreasing = T)
+# print(R)
+# }
 # Had a hard time with this problem trying to figure out how to check the sum of each row and then sorting them in the decreasing order. This feels wrong.
 #TO-DO
 ```
@@ -126,7 +130,6 @@ Test using the following code.
  for (i in 2 : n){
    expect_gte(sum(R[i - 1, ], na.rm = TRUE), sum(R[i, ], na.rm = TRUE))
  }
-
 ```
 
 
@@ -206,7 +209,6 @@ my_list[[ "F" ]] <- value_f
 my_list[[ "G" ]] <- value_g
 my_list[[ "H" ]] <- value_h
 
-my_list
 #I wasn't sure what the question was asking with making 8 Entries, or if we needed to make functions so i brute forced it.
 
 
@@ -217,11 +219,11 @@ my_list
 Test with the following uncomprehensive tests:
 
 
-```{r}
-expect_equal(my_list$A, 1)
-expect_equal(my_list[[2]][, 1], 1 : 2)
-expect_equal(dim(my_list[["H"]]), rep(8, 8))
-```
+# ```{r}
+# expect_equal(my_list$A, 1)
+# expect_equal(my_list[[2]][, 1], 1 : 2)
+# expect_equal(dim(my_list[["H"]]), rep(8, 8))
+# ```
 
 Run the following code:
 
@@ -331,8 +333,6 @@ k
 total_error = sum(1==z[,"q"])
 error_rate = total_error / nrow(z)
 error_rate
-install.packages("knitr")
-install.packages("rmarkdown")
 #TO-DO
 ```
 
