@@ -166,6 +166,6 @@ x_3_bin
 * Use `x_3` to create `x_3_ord`, an ordered, nominal factor variable. Ensure the proper ordinal ordering.
 
 ```{r}
-x_3_ord = sort(x_3, decreasing = FALSE)
+x_3_ord = factor(x_3, ordered = TRUE)
 x_3_ord
 ```
