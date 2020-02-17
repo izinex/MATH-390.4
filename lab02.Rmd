@@ -189,7 +189,8 @@ lapply(g, function(x){
 * Create a vector `v` consisting of a sample of 1,000 iid normal realizations with mean -10 and variance 100.
 
 ```{r}
-v = sample(rnorm(1000,-10,100), size = 1000)
+v = sample(rnorm(1000,-10,sqrt(100)), size = 1000)
+?rnorm
 v
 ```
 
@@ -198,9 +199,9 @@ v
 
 ```{r}
 
-v = c(1,4,3,2,7,6,5,8,9,10)
-v
-rev(v)
+k = c(1,4,3,2,7,6,5,8,9,10)
+k
+rev(k)
 
 my_reverse = function(v){
   for(i in 1:as.integer(length(v)/2)){
@@ -211,38 +212,48 @@ my_reverse = function(v){
   return(v) 
 }
 
-my_reverse(v)
+my_reverse(k)
 ```
 
 
 * Create a function `flip_matrix` which takes as required input a matrix, an argument `dim_to_rev` that returns the matrix with the rows in reverse order or the columns in reverse order depending on the `dim_to_rev` argument. Let the default be the dimension of the matrix that is greater.
 
 ```{r}
-m = matrix(data = rnorm(50,1,10), nrow = 10, ncol = 5)
-#nrow(m)
+m = matrix(data = rnorm(50,1,10), nrow = 5, ncol = 5)
+nrow(m)
 m
 #m[,ncol(m):1]
 #m[nrow(m):1,]
 
 #apply(m,1,rev)
-#ncol(m)
-#I am going to make the function work so it reverse the row if its 1 and reverses the columns if it is 2
+ncol(m)
+#I am going to make the function work so if dim_to_rev is the following, it reverse the row if its 1 and reverses the columns if it is 2, notice this is the case if the rows and columns are equal other wise the default is which ever dimension  
 flip_matrix = function(m, dim_to_rev){
-    if(dim_to_rev == 1){
+    if (nrow(m) > ncol(m)){
       return(m[,ncol(m):1])
-    }else if(dim_to_rev == 2){
+      
+    }
+    else if(nrow(m) < ncol(m)){
       return(m[nrow(m):1,])
+    
     }
     else {
-       stop("Please enter 1 or 2 to reverse the rows or columns in the dim_to_rev parameter.")
+      if(dim_to_rev == 1){
+        return(m[,ncol(m):1])
+      }
+      else if(dim_to_rev == 2){
+        return(m[nrow(m):1,])
+      }
+      else {
+        stop("Please enter 1 or 2 to reverse the rows or columns in the dim_to_rev parameter.")
+      }
     }
-  return(m)
 }
 #This flipped all the rows in in the matrix
 flip_matrix(m,1)
 #This flips all the columns in the matrix
 flip_matrix(m,2)
-#If out of range throws and error
+#If out of range throws an error
 flip_matrix(m,3)
 
 ```
@@ -266,7 +277,7 @@ p
 ?qnorm
 qnorm(p,mean(v),sd(v))
 
-#Not sure if I did this correct from the results i got -173.188 using quantile and -176.522 using qnorm so according to theory they are close but i might have had a bad implementation.
+#Not sure if I did this correct from the results i got -25.39704 using quantile and -25.747591 using qnorm so according to theory they are close but i might have had a bad implementation.
 ```
 
 * What is the percentile of `v` that corresponds to the value 0? What should it be theoretically? Is the estimate about what is expected by theory?
@@ -276,19 +287,19 @@ quantile(v, probs = 0)
 k = c(0,0.10,0.2,.3,1)
 qnorm(k,mean(v),sd(v))
 
-#I guess in theory it should be -Inf but using the quantile i get a low number being -365.7937
+#I guess in theory it should be -Inf but using the quantile i get a low number being -40.28554
 ```
 
 * Create a list named `my_list` with keys "A", "B", ... where the entries are arrays of size 1, 2 x 2, 3 x 3 x 3, etc. Fill the array with the numbers 1, 2, 3, etc. Make 8 entries.
 
 
 ```{r}
-n = 64
+n = 8^{8}
 #o = array(data = 1:64,dim = c(2,2))
 #o
 rep(LETTERS[1:8])
 
-my_list = list("A" = array(data = 1:n, dim = 1), "B" = array(data = 1:n, dim = c(2,2)), "C" = array(data = 1:n, dim = c(3,3)), "D" = array(data = 1:n, dim = c(4,4)), "E" = array(data = 1:n, dim = c(5,5)), "F" = array(data = 1:n, dim = c(6,6)), "G" = array(data = 1:n, dim = c(7,7)),"H" = array(data = 1:n, dim = c(8,8)))
+my_list = list("A" = array(data = 1:n, dim = 1), "B" = array(data = 1:n, dim = c(2,2)), "C" = array(data = 1:n, dim = c(3,3,3)), "D" = array(data = 1:n, dim = c(4,4,4,4)), "E" = array(data = 1:n, dim = c(5,5,5,5,5)), "F" = array(data = 1:n, dim = c(6,6,6,6,6,6)), "G" = array(data = 1:n, dim = c(7,7,7,7,7,7,7)),"H" = array(data = 1:n, dim = c(8,8,8,8,8,8,8,8)))
 my_list
 ```
 
