@@ -478,7 +478,19 @@ For extra credit (unless you're a masters student), add an argument `k` to the `
 
 ```{r}
 #TO-DO --- extra credit for undergrads
-
+nn_algorithm_predict = function(Xinput, y_binary, Xtest, k){
+  
+  k_nearest = matrix(rep(1000, 2*k), ncol = k)
+  best_sqd_distance = Inf
+  y_star = y_binary[1]
+  for(i in 1:nrow(Xinput)){
+    dsqd = sum((Xinput[i, ] - Xtest[i, ])^2)
+    if (dsqd < max(k_nearest[1, ])){
+      y_star = y_binary[i]
+    }
+  }
+  y_star
+}
 ```
 
 
