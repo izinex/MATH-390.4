@@ -343,18 +343,15 @@ Note there are differences between this spec and the perceptron learning algorit
 #' @return            The computed final parameter (weight) as a vector of length p + 1
 linear_svm_learning_algorithm = function(Xinput, y_binary, MAX_ITER = 5000, lambda = 0.1){
   #TO-DO: write pseudo code in comments
-  #candidateClosestPair = {closest pair of opposite classes}
-  #while there are no points violating:
-  #   Find any points which are violating
-  #   candidateClosestPair = candidateClosestPair + violator
-  #               S
-  #   violating points
-  #   if any any point is < 0 due to adding c to S then
-  #       candidateClosestPair = candidateClosestPair\p
-  #       repeat till all points are pruned
-  #   endif
-  #end while
+  #Intialize w 
+  # Make a cost function that does hinge loss
+  #for (i to max_iter){
+  # for(i to # of rows of the input){
+  #     calculate the best 
+  #   }
+  #}
 }
+?optim
 ```
 
 
@@ -371,6 +368,17 @@ If you are enrolled in 390 the following is extra credit but if you're enrolled 
 #' @return            The computed final parameter (weight) as a vector of length p + 1
 linear_svm_learning_algorithm = function(Xinput, y_binary, MAX_ITER = 5000, lambda = 0.1){
   #TO-DO
+  w = runif(ncol(Xinput)+1)
+  cost = function (X, y, w, lambda){
+    loss= max(0, 0.5 - (y-0.5)*(X%*%w[-1] - w[1])) + lambda*w[-1]%*%w[-1]
+    loss
+  }
+  for (j in 1:MAX_ITER){
+    for (i in 1:nrow(Xinput)){
+      optim(par= w, fn= cost, X=Xinput[i, ],y = y_binary[i],lambda = lambda)
+    }
+  }
+  w
 }
 ```
 
@@ -398,16 +406,18 @@ Is this the same as what the `e1071` implementation returned? Why or why not?
 #' @return            The predictions as a n* length vector.
 nn_algorithm_predict = function(Xinput, y_binary, Xtest){
   #TO-DO
+  
+  
   best_sqd_distance = Inf
-  i_star = NA
+  y_star = y_binary[1]
   for(i in 1:nrow(Xinput)){
-   dsqd = ((Xinput[i, ] - Xtest[i, ])^2)
+    dsqd = sum((Xinput[i, ] - Xtest[i, ])^2)
     if (dsqd < best_sqd_distance){
       best_sqd_distance = dsqd
-      i_star = i
+      y_star = y_binary[i]
     }
   }
-  y_binary[i_star]
+  y_star
 }
 ```
 
@@ -420,13 +430,15 @@ data.a = c(2,4,1,3,5,7,4,8,3,2,1,7)
 Xtest = matrix(data.a, nrow = nrow(X_simple_feature_matrix), ncol = ncol(X_simple_feature_matrix))
 Xtest
 nn_algorithm_predict(X_simple_feature_matrix,y_binary,Xtest)
-nn_algorithm_predict(X_simple_feature_matrix,y_binary,c(1,2,3,5,8,4,2,4,5,6,3,2,3,2))
-nn_algorithm_predict(X_simple_feature_matrix,y_binary,45)
+data.b = c(4,2,3,1,5,4,5,7,8,3,5,6)
+Xtest = matrix(data.b, nrow = nrow(X_simple_feature_matrix), ncol = ncol(X_simple_feature_matrix))
+
+nn_algorithm_predict(X_simple_feature_matrix,y_binary,Xtest)
 
 ((X_simple_feature_matrix[,1] - Xtest[,1])^2)
-X_simple_feature_matrix
-Xtest
-y_binary
+#X_simple_feature_matrix
+#Xtest
+#y_binary
 
 
 ```
@@ -435,6 +447,13 @@ We now add an argument `d` representing any legal distance function to the `nn_a
 
 ```{r}
 #TO-DO
+#' This function implements the nearest neighbor algorithm.
+#'
+#' @param Xinput      The training data features as an n x p matrix.
+#' @param y_binary    The training data responses as a vector of length n consisting of only 0's and 1's.
+#' @param Xtest       The test data that the algorithm will predict on as a n* x p matrix.
+#' @param d           The distance function used in the algorithm.
+#' @return            The predictions as a n* length vector.
 nn_algorithm_predict = function(Xinput, 
                                 y_binary, 
                                 Xtest, 
@@ -443,15 +462,15 @@ nn_algorithm_predict = function(Xinput,
   {
   #TO-DO
   best_sqd_distance = Inf
-  i_star = NA
+  y_star = NA
   for(i in 1:nrow(Xinput)){
    dsqd = d(Xinput[i,],Xtest)
     if (dsqd < best_sqd_distance){
       best_sqd_distance = dsqd
-      i_star = i
+      y_star = y_binary[i]
     }
   }
-  y_binary[i_star]
+  y_star
 }
 ```
 
@@ -459,6 +478,7 @@ For extra credit (unless you're a masters student), add an argument `k` to the `
 
 ```{r}
 #TO-DO --- extra credit for undergrads
+
 ```
 
 
