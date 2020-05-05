@@ -319,7 +319,7 @@ summary(mod)$sigma
 summary(mod_z)$sigma
 ```
 
-This model will overfit because it increases the complexity unnecessarily.
+
 
 # CV
 
