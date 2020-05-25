@@ -1,0 +1,450 @@
+---
+title: "Final Project"
+author: "Pizon Shetu"
+date: "11:59PM May 24, 2020"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+Libraries used in my project
+
+```{r}
+library(ggplot2)
+pacman::p_load(dplyr, tidyr, magrittr, mlr, missForest)
+library(ggmap)
+library(Hmisc)
+library(psych)
+library(car)
+library(readr)
+library(varhandle)
+library(dplyr)       # data wrangling
+library(rpart)       # performing regression trees
+library(rpart.plot)  # plotting regression trees
+library(ipred)       # bagging
+library(caret)
+library(resample)
+# library(YARF)
+# pacman::p_install_gh("kapelner/YARF", subdir = "YARF", ref = "dev")
+# pacman::p_install_gh("kapelner/YARF", subdir = "YARFJARs", ref = "dev")
+# pacman::p_install_gh("kapelner/YARF", subdir = "YARF", ref = "dev")
+# pacman::p_load(YARF)
+# pacman::p_load(YARF)
+# 
+# install.packages("rJava", type = "source")
+# install.packages("rmarkdown")
+# getOption("repos")
+# update.packages()
+# 
+# options(java.parameters = "-Xmx4000m")
+# pacman::p_load(rJava)
+# 
+# .jinit()
+# 
+# 
+# 
+# 
+# pacman::p_install_gh("kapelner/YARF/YARF", ref = "dev")
+housing.data = read.csv("housing_data_2016_2017.csv")
+#housing.data$sale_price
+#head(housing.data)
+```
+
+View the data and the structure of the data to see what we're working with
+
+```{r}
+glimpse(housing.data)
+#2,230 obserations and 55 variables
+#summary(housing.data)
+na.vec = which(!complete.cases(housing.data$sale_price))
+
+housing.data = housing.data[-na.vec,]
+sapply(housing.data[,1:55], function(x) sum(is.na(x)))
+
+
+```
+There are alot of variables in this dataset, so I will be dropping the one's which do not relate to the price using dplyr
+
+```{r}
+house = select(housing.data, -c(URL,WorkerId,AssignmentId,HITId,HITTypeId,Title,Description,Keywords,Reward,CreationTime,MaxAssignments,RequesterAnnotation,AssignmentDurationInSeconds,AutoApprovalDelayInSeconds,url,Expiration,NumberOfSimilarHITs,LifetimeInSeconds,AssignmentId,WorkerId,AssignmentStatus,AcceptTime,SubmitTime,AutoApprovalTime,ApprovalTime,RejectionTime,RequesterFeedback,WorkTimeInSeconds,LifetimeApprovalRate,Last30DaysApprovalRate,Last7DaysApprovalRate,date_of_sale,listing_price_to_nearest_1000,pct_tax_deductibl,model_type,num_half_bathrooms,full_address_or_zip_code ))
+
+
+
+glimpse(house)
+#We have dropped 25 variables but our observations are still the same
+#When cleaning and dealing with missing data i realized many of the features just had too much missing data thus for better prediction it was more efficient to drop those fetures
+```
+
+
+
+
+
+
+```{r}
+#Need to re-structure some of the data-types which are factors to numerical and fixe some missingness
+
+
+house$dogs_allowed = ifelse(house$dogs_allowed == "no", 0, 1)
+
+house$cats_allowed = ifelse(house$cats_allowed == "no", 0, 1)
+
+house$dining_room_type = factor(house$dining_room_type, ordered = FALSE)
+
+house$fuel_type = factor(house$fuel_type, ordered = FALSE)
+
+house$kitchen_type = factor(house$kitchen_type, ordered = FALSE)
+
+house$coop_condo = factor(tolower(house$coop_condo))
+
+house$garage_exists = ifelse(is.na(house$garage_exists), 0, 1)
+
+
+house$num_floors_in_building = as.integer(house$num_floors_in_building)
+house$num_bedrooms = as.integer(house$num_bedrooms)
+house$num_full_bathrooms = as.integer(house$num_full_bathrooms)
+house$num_total_rooms = as.integer(house$num_total_rooms)
+
+house$sale_price = as.character(house$sale_price)
+house$sale_price = gsub("[^0-9.-]", "", house$sale_price)
+house$sale_price = as.numeric(house$sale_price)
+
+house$maintenance_cost = as.character(house$maintenance_cost)
+house$maintenance_cost = gsub("[^0-9.-]", "", house$maintenance_cost)
+house$maintenance_cost = as.numeric(house$maintenance_cost)
+
+house$common_charges = as.character(house$common_charges)
+house$common_charges = gsub("[^0-9.-]", "", house$common_charges)
+house$common_charges = as.numeric(house$common_charges)
+
+house$parking_charges = as.character(house$parking_charges)
+house$parking_charges = gsub("[^0-9.-]", "", house$parking_charges)
+house$parking_charges = as.numeric(house$parking_charges)
+
+house$total_taxes = as.character(house$total_taxes)
+house$total_taxes = gsub("[^0-9.-]", "", house$total_taxes)
+house$total_taxes = as.numeric(house$total_taxes)
+
+house$dining_room_type[house$dining_room_type == "none" & !is.na(house$dining_room_type)] = "other"
+house$dining_room_type[house$dining_room_type == "dining area" & !is.na(house$dining_room_type)] = "other"
+house$fuel_type[house$fuel_type == "none" & !is.na(house$fuel_type)] = "other"
+```
+
+Now lets take care of missing values
+```{r}
+# Shows the number of missing values for each columns 
+colSums(sapply(house, is.na))
+
+
+#Isolating the zipcode from the address which takes away too much variability in the choices while keep a zip code which can be associated with a certain area
+#Turns out full address did not help with our errors
+# rightSubStr = function(x,n){
+#   substr(x, nchar(x)-n+1, nchar(x))
+# }
+# house$full_address_or_zip_code = gsub("[^0-9.-]", "", house$full_address_or_zip_code)
+# house$full_address_or_zip_code = as.character(house$full_address_or_zip_code)
+# house$full_address_or_zip_code = rightSubStr(house$full_address_or_zip_code, 5)
+# house$full_address_or_zip_code = as.integer(house$full_address_or_zip_code)
+# house$full_address_or_zip_code
+# class(house$full_address_or_zip_code)
+
+
+pacman::p_load(nycflights13, tidyverse, magrittr, data.table)
+
+
+
+missing = tbl_df(apply(is.na(house), 2, as.numeric))
+colnames(missing) = paste("is_missing_", colnames(house), sep = "")
+missing %<>%
+  select_if(function(x){sum(x) > 0})
+missing
+house_imp = missForest(data.frame(house))$ximp
+house_imp
+
+sd(house_imp$sq_footage)
+final_house_df = cbind(house_imp,missing)
+#Show the number of missing value for all variable in combined dataset 
+
+#final_house_df
+#sapply(final_house_df[,1:19], function(x) sum(is.na(x)))
+
+#glimpse(final_house_df)
+
+#Time to split into training and test 
+
+set.seed(123)
+split <- sample(seq_len(nrow(house_imp)), size = floor(0.7 * nrow(house_imp)))
+train <- house_imp[split, ]
+test <- house_imp[-split, ]
+dim(train)
+dim(test)
+
+```
+
+Lets see the distribution in housing prices
+```{r}
+#The type for price is factor so we make it to numeric as I find it easier to work with as well as plotting with numeric is easier
+price = house_imp$sale_price
+
+price = price / 1000
+
+
+hist(price,
+     data = house_imp,
+     main = 'Price Distribution',
+     xlab = 'Price in 100K or times 1000',
+     ylab = 'Frequency',
+     col = 'green',
+     freq = TRUE,
+     )
+
+#Now lets see the distribution in bedrooms 
+bedrooms = house_imp$num_bedrooms
+hist(bedrooms,
+     main = 'Bedroom Distribution',
+     xlab = 'Bedrooms',
+     ylab = 'Frequency',
+     col = 'brown',
+     
+     )
+
+
+plot(y = house_imp$sale_price/100000, x = house_imp$sq_footage, xlab = 'Sq Footage', ylab = 'Price in 100K', main = 'Price Distribution by Sq Footage', col = 'darkred')
+
+```
+
+
+
+Lets try to fit it using regression tree, going to use the package rpart
+```{r}
+
+
+
+# install.packages('tree')
+# library('rpart.plot')
+# library(rpart)
+
+tree_model = rpart(sale_price ~ ., data = train)
+
+tree_model
+#Not sure how rpart is applying its cost function but apparently rpart performs 10-fold cross validation so that the error associated with a given α value is computed on the hold-out validation data. 
+rpart.plot(tree_model)
+
+plotcp(tree_model)
+
+tree_model$cptable
+
+pred <- predict(tree_model, newdata = test)
+RMSE(pred = pred, obs = test$sale_price)
+
+pacman::p_load(rpart)
+
+
+summary(tree_model)
+#We will try further tuning by changing minsplit and maxdepth which controls the minimum number of data points and maximum number of internal nodes 
+
+tree_model_2 <- rpart(
+    formula = sale_price ~ .,
+    data    = train,
+    method  = "anova", 
+    control = list(minsplit = 10, maxdepth = 30, xval = 10)
+)
+
+plotcp(tree_model_2)
+abline(v = 9, lty = "dashed")
+tree_model_2$cptable
+predictionrt <- predict(tree_model_2, newdata = test)
+RMSE(pred = pred, obs = test$sale_price)
+
+#We need find the optimal number for our hyper-parameter min-split and max-depth
+
+hyper_grid <- expand.grid(
+  minsplit = seq(5, 20, 1),
+  maxdepth = seq(8, 15, 1)
+)
+
+head(hyper_grid)
+
+
+nrow(hyper_grid)
+
+models <- list()
+
+for (i in 1:nrow(hyper_grid)) {
+  
+  # get minsplit, maxdepth values at row i
+  minsplit <- hyper_grid$minsplit[i]
+  maxdepth <- hyper_grid$maxdepth[i]
+
+  # train a model and store in the list
+  models[[i]] <- rpart(
+    formula = sale_price ~ .,
+    data    = train,
+    method  = "anova",
+    control = list(minsplit = minsplit, maxdepth = maxdepth)
+    )
+}
+
+
+# function to get optimal cp
+get_cp <- function(x) {
+  min    <- which.min(x$cptable[, "xerror"])
+  cp <- x$cptable[min, "CP"] 
+}
+
+# function to get minimum error
+get_min_error <- function(x) {
+  min    <- which.min(x$cptable[, "xerror"])
+  xerror <- x$cptable[min, "xerror"] 
+}
+
+hyper_grid %>%
+  mutate(
+    cp    = purrr::map_dbl(models, get_cp),
+    error = purrr::map_dbl(models, get_min_error)
+    ) %>%
+  arrange(error) %>%
+  top_n(-5, wt = error)
+
+
+
+optimal_tree =  rpart(
+    formula = sale_price ~ .,
+    data    = train,
+    method  = "anova",
+    control = list(minsplit = 9, maxdepth = 13, cp = 0.01)
+    )
+
+rpart.plot(optimal_tree)
+plotcp(optimal_tree)
+
+optimal_tree$cptable
+
+predictionrt <- predict(optimal_tree, newdata = test)
+RMSE(predictionrt, test$sale_price)
+
+#It seems even with the optimal model while the error is down by 1%-2% it is not no where near what we want I think I might need to rework our features, but lets try bagging
+
+```
+
+
+```{r}
+
+
+set.seed(123)
+
+# train bagged model
+bagged_m1 <- bagging(
+  formula = sale_price ~ .,
+  data    = train,
+  coob    = TRUE
+)
+
+ntree <- 10:50
+
+# create empty vector to store OOB RMSE values
+rmse <- vector(mode = "numeric", length = length(ntree))
+
+for (i in seq_along(ntree)) {
+  
+  set.seed(123)
+  
+  # perform bagged model
+  model <- bagging(
+  formula = sale_price ~ .,
+  data    = train,
+  coob    = TRUE,
+  nbagg   = ntree[i]
+)
+  # get OOB error
+  rmse[i] = model$err
+}
+
+plot(ntree, rmse, type = 'l', lwd = 2)
+abline(v = 25, col = "red", lty = "dashed")
+ctrl = trainControl(method = "cv",  number = 10) 
+
+# CV bagged model
+cv_model = train(
+  sale_price ~ .,
+  data = train,
+  method = "treebag",
+  trControl = ctrl,
+  importance = TRUE
+  )
+
+# assess results
+cv_model
+
+
+predictionbagrt = predict(cv_model, newdata = test)
+
+RMSE(predictionbagrt, test$sale_price)
+
+RTcomparePrediction = predict(cv_model, house_imp)
+RMSE(RTcomparePrediction, house_imp$sale_price)
+
+# plot most important variables
+plot(varImp(cv_model), 20)  
+
+#Well we reduced RMSE slightly to our original RMSE but still the results are poor I believe this was a better indicator of our model than the linear model where we had a better r2 
+
+#I will be revising some of the features and re-try this with new set of features as this yielded poor results, I believe removing features with high missing data and low importance might yield to a better model like total_taxes, fuel_type, and etc
+```
+
+let's fit the linear model
+
+```{r}
+linear_mod = lm(sale_price ~ ., house_imp)
+linear_mod$model
+options(scipen = 999)
+predictionlin = predict(linear_mod,house_imp)
+predictionlin
+RMSE(predictionlin, house_imp$sale_price)
+#last_house_df = cbind(final_house_df[,1:15], final_house_df[, 17:19])
+#glimpse(last_house_df)
+summary(linear_mod)
+sd(linear_mod$residuals)
+summary(linear_mod)$sigma
+summary(linear_mod)$r.squared
+```
+
+Lets try Random-Forest
+
+```{r}
+library(randomForest)
+rf_model <- randomForest(sale_price~.,
+                            data = train)
+
+importance    <- importance(rf_model)
+importance
+varImpPlot(rf_model)
+
+predictionrf <- predict(rf_model,test)
+predictionrf
+RMSE(predictionrf,test$sale_price)
+#Well while they had similar RMSE it is still high while I would not ship this model to the real-world as you can see from the work clearly, either my data cleaning or feature selection was poor here, I have attempted and tweaked with multiple features but it seems I did not gain much significance in lowering RMSE
+
+
+RFcomparePrediction = predict(rf_model, house_imp)
+RMSE(RFcomparePrediction,house_imp$sale_price)
+plot(house$sale_price, ylim = range(house$sale_price,predictionlin,predictionrt,predictionrf), col = 'red')
+lines(predictionlin, col = 'yellow')
+lines(predictionrt, col = 'brown')
+lines(predictionrf, col = 'green')
+df = data.frame(house_imp$sale_price, predictionlin, RTcomparePrediction, RFcomparePrediction)
+
+require(scales)
+
+ggplot(df, aes(x = df$predictionlin, y = df$house_imp.sale_price)) + geom_point() + labs(x = 'OLS Prediction', y = 'Actual Sale Price') + scale_x_continuous(labels = comma)
+ggplot(df, aes(x = df$RTcomparePrediction, y = df$house_imp.sale_price)) + geom_point() + labs(x = 'Regression Tree Prediction', y = 'Actual Sale Price') + scale_x_continuous(labels = comma)
+ggplot(df, aes(x = df$RFcomparePrediction, y = df$house_imp.sale_price)) + geom_point() + labs(x = 'RandomForest Prediction', y = 'Actual Sale Price') + scale_x_continuous(labels = comma)
+
+# null_model_rmse = RMSE(sum(house$sale_price), mean(house$sale_price))
+# null_model_rmse
+# R2 <- 1 - (sum(((mean(house$sale_price))^2)/sum((house$sale_price-mean(house$sale_price))^2)))
+# R2
+
+sum(abs(house$sale_price - mean(house$sale_price))) / 528
+
+null_model_r2
+```
