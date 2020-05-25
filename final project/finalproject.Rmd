@@ -10,6 +10,9 @@ output:
 Libraries used in my project
 
 ```{r}
+install.packages('stringr', repos = c('http://rforge.net', 'http://cran.rstudio.org'),
+                 type = 'source')
+getOption("repos")
 library(ggplot2)
 pacman::p_load(dplyr, tidyr, magrittr, mlr, missForest)
 library(ggmap)
